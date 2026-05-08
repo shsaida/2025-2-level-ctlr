@@ -6,6 +6,7 @@ Crawler implementation.
 import datetime
 import json
 import pathlib
+import re
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -56,6 +57,7 @@ class Config:
             path_to_config (pathlib.Path): Path to configuration.
         """
         self.path_to_config = path_to_config
+        self._validate_config_content()
 
     def _extract_config_content(self) -> ConfigDTO:
         """
@@ -66,22 +68,42 @@ class Config:
         """
         with open(self.path_to_config) as file:
             config_data = json.load(file)
-        seed_urls = config_data["seed_urls"]
-        total_articles_to_find_and_parse = config_data["total_articles_to_find_and_parse"]
-        headers = config_data["headers"]
-        encoding = config_data["encoding"]
-        timeout = config_data["timeout"]
-        should_verify_certificate = config_data["should_verify_certificate"]
-        headless_mode = config_data["headless_mode"]
-        config_dto = ConfigDTO(seed_urls, total_articles_to_find_and_parse, headers, encoding, timeout, should_verify_certificate, headless_mode)
-        return config_dto
+        # seed_urls = config_data["seed_urls"]
+        # total_articles_to_find_and_parse = config_data["total_articles_to_find_and_parse"]
+        # headers = config_data["headers"]
+        # encoding = config_data["encoding"]
+        # timeout = config_data["timeout"]
+        # should_verify_certificate = config_data["should_verify_certificate"]
+        # headless_mode = config_data["headless_mode"]
+        # config_dto = ConfigDTO(seed_urls, total_articles_to_find_and_parse, headers, encoding, timeout, should_verify_certificate, headless_mode)
+        return ConfigDTO(**config_data)
 
     def _validate_config_content(self) -> None:
         """
         Ensure configuration parameters are not corrupt.
         """
-        # if __________:
-        #     raise IncorrectSeedURLError()
+        config_content = self._extract_config_content()
+        if not isinstance(config_content.seed_urls, list):
+            raise IncorrectSeedURLError()
+        for seed_url in config_content.seed_urls:
+            if not re.match("https?://(www.)?", seed_url, 0):
+                raise IncorrectSeedURLError()
+        num_articles = config_content.total_articles
+        if not isinstance(num_articles, int):
+            raise IncorrectNumberOfArticlesError()
+        if num_articles < 0:
+            raise IncorrectNumberOfArticlesError()
+        if num_articles < 1 or num_articles > 150:
+            raise NumberOfArticlesOutOfRangeError()
+        if not isinstance(config_content.headers, dict):
+            raise IncorrectHeadersError()
+        if not isinstance(config_content.encoding, str):
+            raise IncorrectEncodingError()
+        timeout = config_content.timeout
+        if not (isinstance(timeout, int) and timeout < 60 and timeout >= 0):
+            raise IncorrectTimeoutError()
+        if not (isinstance(config_content.should_verify_certificate, bool) and isinstance(config_content.headless_mode, bool)):
+            raise IncorrectVerifyError()
 
     def get_seed_urls(self) -> list[str]:
         """
@@ -90,6 +112,7 @@ class Config:
         Returns:
             list[str]: Seed urls
         """
+
 
     def get_num_articles(self) -> int:
         """
