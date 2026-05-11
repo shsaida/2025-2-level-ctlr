@@ -17,31 +17,45 @@ from core_utils.constants import CRAWLER_CONFIG_PATH
 
 
 class IncorrectSeedURLError(Exception):
-    'Seed URL does not match standard pattern "https?://(www.)?"'
+    """
+    Seed URL does not match standard pattern "https?://(www.)?
+    """
 
 
 class NumberOfArticlesOutOfRangeError(Exception):
-    "Total number of articles is out of range from 1 to 150"
+    """
+    Total number of articles is out of range from 1 to 150.
+    """
 
 
 class IncorrectNumberOfArticlesError(Exception):
-    "Total number of articles to parse is not integer or less than 0"
+    """
+    Total number of articles to parse is not integer or less than 0.
+    """
 
 
 class IncorrectHeadersError(Exception):
-    "Headers are not in a form of dictionary"
+    """
+    Headers are not in a form of dictionary.
+    """
 
 
 class IncorrectEncodingError(Exception):
-    "Encoding must be specified as a string"
+    """
+    Encoding must be specified as a string.
+    """
 
 
 class IncorrectTimeoutError(Exception):
-    "Timeout value must be a positive integer less than 60"
+    """
+    Timeout value must be a positive integer less than 60.
+    """
 
 
 class IncorrectVerifyError(Exception):
-    "verify certificate and headless mode values must either be ``True`` or ``False``"
+    """
+    Verify certificate and headless mode values must either be ``True`` or ``False``.
+    """
 
 
 class Config:
