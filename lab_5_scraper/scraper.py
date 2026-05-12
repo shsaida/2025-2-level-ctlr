@@ -10,6 +10,7 @@ import re
 
 import requests
 from bs4 import BeautifulSoup, Tag
+from urllib.parse import urljoin
 
 from core_utils.article.article import Article
 from core_utils.config_dto import ConfigDTO
@@ -195,6 +196,16 @@ def make_request(url: str, config: Config) -> requests.models.Response:
     Returns:
         requests.models.Response: A response from a request
     """
+    headers = config.get_headers()
+    timeout = config.get_timeout()
+    verify = config.get_verify_certificate()
+    try:
+        response = requests.get(url, headers=headers, timeout=timeout, verify=verify)
+        return response
+    except requests.exceptions.Timeout:
+        print("Timeout: Server didn't respond in 3s")
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
 
 
 class Crawler:
@@ -212,6 +223,8 @@ class Crawler:
         Args:
             config (Config): Configuration
         """
+        self.config = config
+        self.urls = []
 
     def _extract_url(self, article_bs: Tag) -> str:
         """
@@ -223,11 +236,23 @@ class Crawler:
         Returns:
             str: Url from HTML
         """
+        relative_link = article_bs.get("href")
+        return relative_link
 
     def find_articles(self) -> None:
         """
         Find articles.
         """
+        for seed_url in self.config.get_seed_urls():
+            response = make_request(seed_url, self.config)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text)
+                all_links = soup.find_all("a") 
+                for link_tag in all_links: #going through tags of links located in an html page
+                    new_relative_url = self._extract_url(link_tag)
+                    new_full_url = urljoin(seed_url, new_relative_url)
+                    if new_full_url not in self.urls:
+                        self.urls.append(new_full_url)
 
     def get_search_urls(self) -> list:
         """
@@ -236,6 +261,7 @@ class Crawler:
         Returns:
             list: seed_urls param
         """
+        return self.config.get_seed_urls()
 
 
 # 10
@@ -279,6 +305,10 @@ class HTMLParser:
             article_id (int): Article id
             config (Config): Configuration
         """
+        self.full_url = full_url
+        self.article_id = article_id
+        self.config = config
+        self.article = Article(full_url)
 
     def _fill_article_with_text(self, article_soup: BeautifulSoup) -> None:
         """
@@ -323,6 +353,11 @@ def prepare_environment(base_path: pathlib.Path | str) -> None:
     Args:
         base_path (pathlib.Path | str): Path where articles stores
     """
+    try:
+        base_path.mkdir()
+    except FileExistsError:
+        base_path.rmdir()
+        base_path.mkdir()
 
 
 def main() -> None:

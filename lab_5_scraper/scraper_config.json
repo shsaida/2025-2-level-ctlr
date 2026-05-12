@@ -1,9 +1,14 @@
 {
-    "seed_urls": [],
+    "seed_urls": [
+        "https://pravlitlug.ru/khudozhestvennaya-proza1/malaya-proza1/rasskazy1",
+        "https://pravlitlug.ru/khudozhestvennaya-proza1/malaya-proza1/rasskazy1?start=28",
+        "https://pravlitlug.ru/khudozhestvennaya-proza1/malaya-proza1/rasskazy1?start=56",
+        "https://pravlitlug.ru/khudozhestvennaya-proza1/malaya-proza1/rasskazy1?start=84"
+    ],
     "headers": {},
     "total_articles_to_find_and_parse": 100,
     "encoding": "",
-    "timeout": 30,
+    "timeout": 3,
     "should_verify_certificate": true,
     "headless_mode": true
 }
