@@ -365,10 +365,10 @@ def prepare_environment(base_path: pathlib.Path | str) -> None:
         base_path (pathlib.Path | str): Path where articles stores
     """
     try:
-        base_path.mkdir()
+        base_path.mkdir(parents=True)
     except FileExistsError:
         shutil.rmtree(base_path)
-        base_path.mkdir()
+        base_path.mkdir(parents=True)
 
 
 def main() -> None:
