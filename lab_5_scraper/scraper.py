@@ -7,14 +7,16 @@ import datetime
 import json
 import pathlib
 import re
+import shutil
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Tag
 
 from core_utils.article.article import Article
+from core_utils.article.io import to_meta, to_raw
 from core_utils.config_dto import ConfigDTO
-from core_utils.constants import CRAWLER_CONFIG_PATH
+from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
 
 
 class IncorrectSeedURLError(Exception):
@@ -365,7 +367,7 @@ def prepare_environment(base_path: pathlib.Path | str) -> None:
     try:
         base_path.mkdir()
     except FileExistsError:
-        base_path.rmdir()
+        shutil.rmtree(base_path)
         base_path.mkdir()
 
 
@@ -376,4 +378,12 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    configuration = Config(path_to_config=CRAWLER_CONFIG_PATH)
+    prepare_environment(ASSETS_PATH)
+    crawler = Crawler(config=configuration)
+    crawler.find_articles()
+    urls = crawler.urls
+    for i, full_url in enumerate(urls):
+        parser = HTMLParser(full_url=full_url, article_id=i, config=configuration)
+        article = parser.parse()
+        to_raw(article)
