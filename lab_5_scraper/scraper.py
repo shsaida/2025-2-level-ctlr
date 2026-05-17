@@ -399,7 +399,8 @@ if __name__ == "__main__":
     crawler.find_articles()
     urls = crawler.urls
 
-    for i, full_url in enumerate(urls, start=1):       
+    article_urls = [url for url in urls if '/item/' in url]
+    for i, full_url in enumerate(article_urls, start=1):       
         parser = HTMLParser(full_url=full_url, article_id=i, config=configuration)
         article = parser.parse()
         if article and article.text:
