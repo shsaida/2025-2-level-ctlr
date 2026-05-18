@@ -365,16 +365,16 @@ class HTMLParser:
         title_content = title_tag["content"] if title_tag else "NOT FOUND"
         self.article.title = title_content
 
-        # finding_date_tag = article_soup.find("div", class_="itemHeader")
-        # if finding_date_tag:
-        #     date_tag = finding_date_tag.find("span", class_="itemDateCreated")
-        #     if date_tag:
-        #         date_str = date_tag.get_text()
-        #         self.article.date = self.unify_date_format(date_str)
-        #     else:
-        #         self.article.date = datetime.datetime.now()
-        # else:
-        #     self.article.date = datetime.datetime.now()
+        finding_date_tag = article_soup.find("div", class_="itemHeader")
+        if finding_date_tag:
+            date_tag = finding_date_tag.find("span", class_="itemDateCreated")
+            if date_tag:
+                date_str = date_tag.get_text()
+                self.article.date = self.unify_date_format(date_str)
+            else:
+                self.article.date = datetime.datetime.now()
+        else:
+            self.article.date = datetime.datetime.now()
 
     def unify_date_format(self, date_str: str) -> datetime.datetime:
         """
@@ -386,25 +386,28 @@ class HTMLParser:
         Returns:
             datetime.datetime: Datetime object
         """
-        # # Example: "Вторник, 26 мая 2015 07:20"
-        # months_map = {
-        # 'января': 'январь',
-        # 'февраля': 'февраль',
-        # 'марта': 'март',
-        # 'апреля': 'апрель',
-        # 'мая': 'май',
-        # 'июня': 'июнь',
-        # 'июля': 'июль',
-        # 'августа': 'август',
-        # 'сентября': 'сентябрь',
-        # 'октября': 'октябрь',
-        # 'ноября': 'ноябрь',
-        # 'декабря': 'декабрь'
-        # }
-        # for gen, nom in months_map.items():
-        #     date_str = date_str.replace(gen, nom)
-        # parsed_date = datetime.datetime.strptime(date_str, "%A, %d %B %Y %H:%M")
-        # return parsed_date
+        # Example: "Вторник, 26 мая 2015 07:20"
+        months_map = {
+        'января': '01',
+        'февраля': '02',
+        'марта': '03',
+        'апреля': '04',
+        'мая': '05',
+        'июня': '06',
+        'июля': '07',
+        'августа': '08',
+        'сентября': '09',
+        'октября': '10',
+        'ноября': '11',
+        'декабря': '12'
+        }
+        for gen, nom in months_map.items():
+            date_str = date_str.replace(gen, nom)
+        date_str = date_str.replace("\n", "").strip()
+        coma_ind = date_str.find(",")
+        date_str = date_str[coma_ind+2:]
+        parsed_date = datetime.datetime.strptime(date_str, "%d %m %Y %H:%M")
+        return parsed_date
 
     def parse(self) -> Article | bool:
         """
@@ -436,7 +439,7 @@ def prepare_environment(base_path: pathlib.Path | str) -> None:
     """
     if base_path.exists():
         shutil.rmtree(base_path)
-    base_path.mkdir(parents=True, exist_ok=True)
+    base_path.mkdir(parents=True)
 
 
 
