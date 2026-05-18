@@ -91,7 +91,7 @@ class Config:
         Returns:
             ConfigDTO: Config values
         """
-        with open(self.path_to_config) as file:
+        with open(self.path_to_config, encoding=self.get_encoding()) as file:
             config_data = json.load(file)
         configuration = ConfigDTO(**config_data)
         return configuration
@@ -120,7 +120,10 @@ class Config:
         timeout = config_content.timeout
         if not (isinstance(timeout, int) and timeout < 60 and timeout >= 0):
             raise IncorrectTimeoutError()
-        if not (isinstance(config_content.should_verify_certificate, bool) and isinstance(config_content.headless_mode, bool)):
+        if not (
+            isinstance(config_content.should_verify_certificate, bool)
+            and isinstance(config_content.headless_mode, bool)
+            ):
             raise IncorrectVerifyError()
 
     def get_seed_urls(self) -> list[str]:
@@ -240,17 +243,15 @@ class Crawler:
             str: Url from HTML
         """
         relative_link = article_bs.get("href")
-        return relative_link
+        return str(relative_link)
 
     def find_articles(self) -> None:
         """
         Find articles.
         """
         for seed_url in self.config.get_seed_urls():
-            
             if len(self.urls) > self.config.get_num_articles():
                 break
-            
             response = make_request(seed_url, self.config)
             if response and response.status_code == 200:
                 soup = BeautifulSoup(response.text)
@@ -329,14 +330,12 @@ class HTMLParser:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
         texts = []
-
         # Following is a complex algorythm to finally find all text in an article webpage
         content_div = article_soup.find("div", class_="itemFullText")
         if not content_div:
             content_div = article_soup.find("div", class_="article-content")
         if not content_div:
             content_div = article_soup.find("div", itemprop="articleBody")
-        
         if content_div:
             for tag in content_div.find_all(["p", "blockquote", "div"]):
                 text = tag.get_text(strip=True)
@@ -347,7 +346,6 @@ class HTMLParser:
                 text = tag.get_text(strip=True)
                 if text:
                     texts.append(text)
-
         self.article.text = " ".join(texts)
 
     def _fill_article_with_meta_information(self, article_soup: BeautifulSoup) -> None:
@@ -417,15 +415,14 @@ class HTMLParser:
             Article | bool: Article instance, False in case of request error
         """
         try:
-            response = requests.get(self.full_url)
+            response = requests.get(self.full_url, headers=self.config.get_headers(), timeout=self.config.get_timeout())
             if response.status_code != 200:
                 return False
             response.encoding = self.config.get_encoding()
             article_bs = BeautifulSoup(response.text, "html.parser")
             self._fill_article_with_text(article_bs)
             self._fill_article_with_meta_information(article_bs)
-
-        except:
+        except ValueError:
             return False
         return self.article
 
@@ -442,38 +439,29 @@ def prepare_environment(base_path: pathlib.Path | str) -> None:
     base_path.mkdir(parents=True)
 
 
-
 def main() -> None:
     """
     Entrypoint for scraper module.
     """
-
-
-if __name__ == "__main__":
     configuration = Config(path_to_config=CRAWLER_CONFIG_PATH)
-
     print(f"CONFIG TOTAL ARTICLES: {configuration.get_num_articles()}")
-    
     prepare_environment(ASSETS_PATH)
     crawler = Crawler(config=configuration)
     crawler.find_articles()
     urls = crawler.urls
-
     article_urls = [url for url in urls if '/item/' in url]
-
     print(f"FOUND {len(article_urls)} article URLs")
-
     article_urls = article_urls[:configuration.get_num_articles()]
     print(f"WILL PROCESS {len(article_urls)} articles")
-
     i = 1
     for full_url in article_urls:
-        
         print(f"Processing {i}: {full_url}")
-        
         parser = HTMLParser(full_url=full_url, article_id=i, config=configuration)
         article = parser.parse()
         if article and article.text and len(article.text.strip()) >= 50:
             to_raw(article)
             to_meta(article)
             i += 1
+
+if __name__ == "__main__":
+    main()
