@@ -292,7 +292,7 @@ class CrawlerRecursive(Crawler):
         Args:
             config (Config): Configuration
         """
-        #super().__init__(config)
+        super().__init__(config)  # pylint: disable=useless-parent-delegation
 
     def find_articles(self) -> None:
         """
