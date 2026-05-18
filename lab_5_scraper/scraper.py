@@ -285,6 +285,7 @@ class CrawlerRecursive(Crawler):
     Get one URL of the title page and find requested number of articles recursively.
     """
 
+    # pylint: disable=useless-parent-delegation
     def __init__(self, config: Config) -> None:
         """
         Initialize an instance of the CrawlerRecursive class.
@@ -292,7 +293,7 @@ class CrawlerRecursive(Crawler):
         Args:
             config (Config): Configuration
         """
-        super().__init__(config)  # pylint: disable=useless-parent-delegation
+        super().__init__(config)
 
     def find_articles(self) -> None:
         """
