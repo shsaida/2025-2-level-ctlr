@@ -91,7 +91,7 @@ class Config:
         Returns:
             ConfigDTO: Config values
         """
-        with open(self.path_to_config, encoding=self.get_encoding()) as file:
+        with open(self.path_to_config) as file:
             config_data = json.load(file)
         configuration = ConfigDTO(**config_data)
         return configuration
@@ -243,7 +243,7 @@ class Crawler:
             str: Url from HTML
         """
         relative_link = article_bs.get("href")
-        return str(relative_link)
+        return relative_link
 
     def find_articles(self) -> None:
         """
@@ -415,14 +415,14 @@ class HTMLParser:
             Article | bool: Article instance, False in case of request error
         """
         try:
-            response = requests.get(self.full_url, headers=self.config.get_headers(), timeout=self.config.get_timeout())
+            response = requests.get(self.full_url)
             if response.status_code != 200:
                 return False
             response.encoding = self.config.get_encoding()
             article_bs = BeautifulSoup(response.text, "html.parser")
             self._fill_article_with_text(article_bs)
             self._fill_article_with_meta_information(article_bs)
-        except ValueError:
+        except:
             return False
         return self.article
 
