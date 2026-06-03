@@ -4,8 +4,10 @@ Pipeline for CONLL-U formatting.
 
 # pylint: disable=too-few-public-methods, unused-import, undefined-variable, too-many-nested-blocks, duplicate-code
 import pathlib
+import re
 
 from core_utils.article.article import Article
+from core_utils.article.io import to_cleaned
 from core_utils.constants import ASSETS_PATH
 from core_utils.pipeline import LibraryWrapper, PipelineProtocol, TreeNode
 
@@ -23,18 +25,6 @@ except ImportError:
     Language = None  # type: ignore
     Doc = None  # type: ignore
     print("No libraries installed. Failed to import.")
-
-
-class FileNotFoundError(Exception):
-    """
-    Path does not exist.
-    """
-
-
-class NotADirectoryError(Exception):
-    """
-    Path does not lead to a directory.
-    """
 
 
 class InconsistentDatasetError(Exception):
@@ -64,19 +54,49 @@ class CorpusManager:
         self.path_to_raw_txt_data = path_to_raw_txt_data
         self._storage = {}
         self._validate_dataset()
+        self._scan_dataset()
 
     def _validate_dataset(self) -> None:
         """
         Validate folder with assets.
         """
-        if not pathlib.Path.exists(self.path_to_raw_txt_data):
+        if not self.path_to_raw_txt_data.exists():
             raise FileNotFoundError
-        if not 
+        if not self.path_to_raw_txt_data.is_dir():
+            raise NotADirectoryError
+        files = list(self.path_to_raw_txt_data.glob("*_raw.txt"))
+        if not files:
+            raise EmptyDirectoryError
+        ids = set()
+        for file_path in files:
+            try:
+                article_id = int(file_path.stem.split("_")[0])
+                ids.add(article_id)
+            except (ValueError, IndexError):
+                continue
+        expected_ids = set(range(1, len(ids) + 1))
+        if ids != expected_ids:
+            raise InconsistentDatasetError
+        for article_id in ids:
+            raw_file = self.path_to_raw_txt_data / f"{article_id}_raw.txt"
+            meta_file = self.path_to_raw_txt_data / f"{article_id}_meta.json"
+            if not meta_file.exists():
+                raise InconsistentDatasetError
+            if raw_file.stat().st_size == 0 or meta_file.stat().st_size == 0:
+                raise InconsistentDatasetError
 
     def _scan_dataset(self) -> None:
         """
         Register each dataset entry.
         """
+        files = self.path_to_raw_txt_data.glob("*_raw.txt")
+        for file_path in files:
+            article_id = int(file_path.stem.split("_")[0])
+            article = Article(url=None, article_id=article_id)
+            with open(file_path, "r", encoding="utf-8") as f:
+                raw_text = f.read()
+            article.text = raw_text
+            self._storage[article_id] = article
 
     def get_articles(self) -> dict:
         """
@@ -85,6 +105,7 @@ class CorpusManager:
         Returns:
             dict: Storage params
         """
+        return self._storage
 
 
 class TextProcessingPipeline(PipelineProtocol):
@@ -102,11 +123,22 @@ class TextProcessingPipeline(PipelineProtocol):
             corpus_manager (CorpusManager): CorpusManager instance
             analyzer (LibraryWrapper | None, optional): Analyzer instance. Defaults to None.
         """
+        self._corpus = corpus_manager
+        self._analyzer = analyzer
 
     def run(self) -> None:
         """
         Perform basic preprocessing and write processed text to files.
         """
+        articles = self._corpus.get_articles()
+        for article_id, article in articles.items():
+            raw_path = self._corpus.path_to_raw_txt_data / f"{article_id}_raw.txt"
+            with open(raw_path, "r", encoding="utf-8") as f:
+                raw_text = f.read()
+            cleaned_text = raw_text.lower()
+            cleaned_text = re.sub(r"[^\w\s\'-]", "", cleaned_text)
+            article.cleaned_text = cleaned_text
+            to_cleaned(article)
 
 
 class UDPipeAnalyzer(LibraryWrapper):
@@ -255,6 +287,8 @@ def main() -> None:
     Entrypoint for pipeline module.
     """
     corpus_manager = CorpusManager(path_to_raw_txt_data=ASSETS_PATH)
+    pipeline = TextProcessingPipeline(corpus_manager)
+    pipeline.run()
 
 
 if __name__ == "__main__":
