@@ -38,7 +38,7 @@ class EmptyDirectoryError(Exception):
     Directory is empty.
     """
 
-
+#just for a commit
 class CorpusManager:
     """
     Work with articles and store them.
