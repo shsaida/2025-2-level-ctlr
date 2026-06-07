@@ -141,9 +141,6 @@ class TextProcessingPipeline(PipelineProtocol):
         articles = self._corpus.get_articles()
         for article in articles.values():
             raw_text = article.text
-            # cleaned_text = raw_text.lower()
-            # cleaned_text = re.sub(r"[^\w\s\'-]", "", cleaned_text)
-            # article.cleaned_text = cleaned_text
             to_cleaned(article)
             if self._analyzer is not None:
                 conllu_results = self._analyzer.analyze([raw_text])
